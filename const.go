@@ -11,4 +11,11 @@ const (
 	// API endpoints
 	APIRoot    = "api.foursquare.com"
 	APIVersion = "v2"
+
+	// See: https://developer.foursquare.com/overview/versioning
+	// The `v` param: version in YYYYMMDD format
+	DateVersion = "20160124"
+	// The `m` param: Foursquare or Swarm mode
+	FoursquareMode = "foursquare"
+	SwarmMode      = "iota"
 )
