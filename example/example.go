@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"text/template"
@@ -24,7 +26,6 @@ func init() {
 	redirectURI := os.Getenv("FOURSQUARE_REDIRECT_URI")
 
 	client = foursquare.NewClient(clientID, clientSecret, redirectURI)
-	fmt.Printf("+v\n", client)
 }
 
 // mainHandler is the handler for the root URL (index).
@@ -47,20 +48,40 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	// check for `code` param in URL
 	code := r.URL.Query().Get("code")
-
-	if code != "" {
-		token, err := client.GetAccessToken(code)
-		if err != nil {
-			http.Error(w, err.Error(), 502)
-		}
-
-		fmt.Println(token)
+	if code == "" {
+		http.Error(w, "missing code, could not get token", 502)
 	}
 
-	// otherwise, parse the access token, woot.
+	token, err := client.GetAccessToken(code)
+	if err != nil {
+		http.Error(w, err.Error(), 502)
+	}
+
+	// HACK: quick api call to make sure we got the right token
+	// TODO: refactor once the user resource is implemented.
+	// TODO: support date versioning and mode
+	u := fmt.Sprintf("https://api.foursquare.com/v2/users/self?oauth_token=%s&v=20160124&m=foursquare", token)
+	resp, _ := http.Get(u)
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	type user struct {
+		FirstName string `json:"firstName"`
+		LastName  string `json:"lastName"`
+	}
+	type result struct {
+		Response struct {
+			User user `json:"user"`
+		} `json:"response"`
+	}
+	var res result
+	json.Unmarshal(body, &res)
+	fmt.Fprintf(w, "Hello, %s %s!\n", res.Response.User.FirstName, res.Response.User.LastName)
 }
 
 func main() {
 	http.HandleFunc("/", mainHandler)
+	http.HandleFunc("/redirect", redirectHandler)
 	http.ListenAndServe(":8080", nil)
 }
