@@ -84,3 +84,21 @@ func (c FoursquareClient) GetAccessToken(code string) (string, error) {
 	c.AccessToken = token.AccessToken
 	return token.AccessToken, nil
 }
+
+func (c FoursquareClient) get(path string, params map[string]string) (*http.Response, error) {
+	// all requests against the Foursquare API need a v(ersion), m(ode), and token
+	vals := url.Values{}
+	vals.Set("v", DateVersion)
+	vals.Set("m", FoursquareMode)
+	vals.Set("oauth_token", c.AccessToken)
+	for k, v := range params {
+		vals.Set(k, v)
+	}
+
+	u := url.URL{
+		Scheme:   "https",
+		Path:     path,
+		RawQuery: vals.Encode(),
+	}
+	return http.Get(u.String())
+}
