@@ -90,7 +90,12 @@ func (c FoursquareClient) get(path string, params map[string]string) (*http.Resp
 	vals := url.Values{}
 	vals.Set("v", DateVersion)
 	vals.Set("m", FoursquareMode)
-	vals.Set("oauth_token", c.AccessToken)
+	if c.AccessToken != "" {
+		vals.Set("oauth_token", c.AccessToken)
+	} else {
+		vals.Set("client_id", c.ClientID)
+		vals.Set("client_secret", c.ClientSecret)
+	}
 	for k, v := range params {
 		vals.Set(k, v)
 	}
